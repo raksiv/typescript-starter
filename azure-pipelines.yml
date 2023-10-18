@@ -21,8 +21,8 @@ steps:
     export PATH=$PATH:$HOME/.pulumi/bin
     pulumi version
 
-    # Install your CLI
+    # Install Nitric
     curl https://nitric.io/install | bash
     nitric --version
-  displayName: 'Install Pulumi and Nitric Tool'
+  displayName: 'Install Pulumi and Nitric'
 
