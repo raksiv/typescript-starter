@@ -27,5 +27,3 @@ steps:
     export PATH=$PATH:$HOME/.nitric/bin
     nitric up --ci
   displayName: 'Install Pulumi and Nitric'
-  env:
-    PULUMI_CONFIG_PASSPHRASE: 'abcdefghijklmnopqrstuvwxyz'
