@@ -15,6 +15,7 @@ steps:
   displayName: 'npm install and build'
 
 - script: |
+
     # Install Pulumi
     curl -fsSL https://get.pulumi.com | sh
     # Export path for pulumi (assuming default installation path)
@@ -26,4 +27,5 @@ steps:
     export PATH=$PATH:$HOME/.nitric/bin
     nitric up --ci
   displayName: 'Install Pulumi and Nitric'
-
+  env:
+    PULUMI_CONFIG_PASSPHRASE: 'abcdefghijklmnopqrstuvwxyz'
