@@ -24,6 +24,6 @@ steps:
     # Install Nitric
     curl https://nitric.io/install | bash
     export PATH=$PATH:$HOME/.nitric/bin
-    nitric up
+    nitric up --ci
   displayName: 'Install Pulumi and Nitric'
 
