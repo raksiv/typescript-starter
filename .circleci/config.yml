@@ -1,26 +1,61 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/configuration-reference/#jobs
+orbs:
+  node: circleci/node@4.1.0
+
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/configuration-reference/#executor-job
+  build:
     docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/configuration-reference/#steps
+      - image: cimg/node:10.24
+
+    environment:
+      PULUMI_CONFIG_PASSPHRASE: << pipeline.parameters.PULUMI_CONFIG_PASSPHRASE >>
+      PULUMI_ACCESS_TOKEN: << pipeline.parameters.PULUMI_ACCESS_TOKEN >>
+      AWS_ACCESS_KEY_ID: << pipeline.parameters.AWS_ACCESS_KEY_ID >>
+      AWS_REGION: "us-east-1"
+      AWS_SECRET_ACCESS_KEY: << pipeline.parameters.AWS_SECRET_ACCESS_KEY >>
+
     steps:
       - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/configuration-reference/#workflows
+      - node/install:
+          install-npm: false
+          node-version: "10.24"
+
+      - run:
+          name: "npm install and build"
+          command: npm install
+
+      - run:
+          name: "Install Pulumi and Nitric"
+          command: |
+            curl -fsSL https://get.pulumi.com | sh
+            echo 'export PATH=$PATH:$HOME/.pulumi/bin' >> $BASH_ENV
+            pulumi version
+            curl https://nitric.io/install | bash
+            echo 'export PATH=$PATH:$HOME/.nitric/bin' >> $BASH_ENV
+            nitric up --ci
+
 workflows:
-  say-hello-workflow:
+  version: 2
+  build-and-deploy:
     jobs:
-      - say-hello
+      - build:
+          filters:
+            branches:
+              only:
+                - main
+
+parameters:
+  PULUMI_CONFIG_PASSPHRASE:
+    type: string
+    default: PULUMI_CONFIG_PASSPHRASE
+  PULUMI_ACCESS_TOKEN:
+    type: string
+    default: PULUMI_ACCESS_TOKEN
+  AWS_ACCESS_KEY_ID:
+    type: string
+    default: AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY:
+    type: string
+    default: AWS_SECRET_ACCESS_KEY
