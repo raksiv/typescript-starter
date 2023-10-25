@@ -1,35 +1,35 @@
 trigger:
-- main
+  - main
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '10.x'
-  displayName: 'Install Node.js'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "10.x"
+    displayName: "Install Node.js"
 
-- script: |
-    npm install
-  displayName: 'npm install and build'
+  - script: |
+      npm install
+    displayName: "npm install and build"
 
-- script: |
+  - script: |
 
-    # Install Pulumi
-    curl -fsSL https://get.pulumi.com | sh
-    # Export path for pulumi (assuming default installation path)
-    export PATH=$PATH:$HOME/.pulumi/bin
-    pulumi version
+      # Install Pulumi
+      curl -fsSL https://get.pulumi.com | sh
+      # Export path for pulumi (assuming default installation path)
+      export PATH=$PATH:$HOME/.pulumi/bin
+      pulumi version
 
-    # Install Nitric
-    curl https://nitric.io/install | bash
-    export PATH=$PATH:$HOME/.nitric/bin
-    nitric up --ci
-  displayName: 'Install Pulumi and Nitric'
-  env:
-    PULUMI_CONFIG_PASSPHRASE: $(PULUMI_CONFIG_PASSPHRASE)
-    PULUMI_ACCESS_TOKEN: $(PULUMI_ACCESS_TOKEN)
-    AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-    AWS_REGION: 'us-east-1'
-    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      # Install Nitric
+      curl https://nitric.io/install | bash
+      export PATH=$PATH:$HOME/.nitric/bin
+      nitric up aws-aus --ci
+    displayName: "Install Pulumi and Nitric"
+    env:
+      PULUMI_CONFIG_PASSPHRASE: $(PULUMI_CONFIG_PASSPHRASE)
+      PULUMI_ACCESS_TOKEN: $(PULUMI_ACCESS_TOKEN)
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_REGION: "us-east-1"
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}

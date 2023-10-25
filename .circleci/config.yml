@@ -1,61 +1,42 @@
 version: 2.1
 
-orbs:
-  node: circleci/node@4.1.0
+executors:
+  default-executor:
+    docker:
+      - image: circleci/node:14
 
 jobs:
-  build:
-    docker:
-      - image: cimg/node:10.24
-
-    environment:
-      PULUMI_CONFIG_PASSPHRASE: << pipeline.parameters.PULUMI_CONFIG_PASSPHRASE >>
-      PULUMI_ACCESS_TOKEN: << pipeline.parameters.PULUMI_ACCESS_TOKEN >>
-      AWS_ACCESS_KEY_ID: << pipeline.parameters.AWS_ACCESS_KEY_ID >>
-      AWS_REGION: "us-east-1"
-      AWS_SECRET_ACCESS_KEY: << pipeline.parameters.AWS_SECRET_ACCESS_KEY >>
-
+  install_dependencies:
+    executor: default-executor
     steps:
       - checkout
-
-      - node/install:
-          install-npm: false
-          node-version: "10.24"
+      - run:
+          name: Install Nitric CLI
+          command: |
+            curl https://nitric.io/install | bash
+            export PATH=$PATH:$HOME/.nitric/bin
 
       - run:
-          name: "npm install and build"
-          command: npm install
-
-      - run:
-          name: "Install Pulumi and Nitric"
+          name: Install Pulumi CLI
           command: |
             curl -fsSL https://get.pulumi.com | sh
-            echo 'export PATH=$PATH:$HOME/.pulumi/bin' >> $BASH_ENV
-            pulumi version
-            curl https://nitric.io/install | bash
-            echo 'export PATH=$PATH:$HOME/.nitric/bin' >> $BASH_ENV
-            nitric up --ci
+            export PATH=$PATH:$HOME/.pulumi/bin
+
+  check_versions:
+    executor: default-executor
+    steps:
+      - run:
+          name: Check Nitric Version
+          command: nitric version
+      - run:
+          name: Check Pulumi Version
+          command: pulumi version
 
 workflows:
   version: 2
-  build-and-deploy:
+  install_and_test:
     jobs:
-      - build:
-          filters:
-            branches:
-              only:
-                - main
-
-parameters:
-  PULUMI_CONFIG_PASSPHRASE:
-    type: string
-    default: PULUMI_CONFIG_PASSPHRASE
-  PULUMI_ACCESS_TOKEN:
-    type: string
-    default: PULUMI_ACCESS_TOKEN
-  AWS_ACCESS_KEY_ID:
-    type: string
-    default: AWS_ACCESS_KEY_ID
-  AWS_SECRET_ACCESS_KEY:
-    type: string
-    default: AWS_SECRET_ACCESS_KEY
+      - install_dependencies
+      - check_versions:
+          requires:
+            - install_dependencies
