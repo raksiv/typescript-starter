@@ -1,42 +1,89 @@
 version: 2.1
 
-executors:
-  default-executor:
-    docker:
-      - image: circleci/node:14
+description: |
+  Pulumi and Nitric: Cloud Native Infrastructure as Code
+
+  This orb integrates Pulumi and Nitric functionalities for comprehensive cloud-native deployment.
+
+display:
+  source_url: https://github.com/your-org/circleci-orb
+  home_url: https://www.pulumi.com
+
+commands:
+  # Pulumi login command
+  pulumi_login:
+    parameters:
+      version:
+        type: string
+        description: "Version of the Pulumi CLI to install. Defaults to the latest version."
+        default: latest
+      cloud-url:
+        type: string
+        description: "URL of the Pulumi service to log into."
+        default: https://api.pulumi.com
+      access-token:
+        type: string
+        description: "The access token to use."
+        default: "${PULUMI_ACCESS_TOKEN}"
+    steps:
+      - run:
+          name: "Install Pulumi CLI"
+          command: |
+            if [ "<< parameters.version >>" == "latest" ]; then
+              curl -L https://get.pulumi.com/ | bash -s
+            else
+              curl -L https://get.pulumi.com/ | bash -s -- --version << parameters.version >>
+            fi
+            echo 'export PATH=${HOME}/.pulumi/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: "Log into Pulumi"
+          command: |
+            export PULUMI_ACCESS_TOKEN="<< parameters.access-token >>"
+            pulumi login --cloud-url << parameters.cloud-url >>
+
+  # Nitric CLI 'up' command
+  nitric_up:
+    parameters:
+      environment:
+        type: string
+        description: "The environment to deploy to using Nitric CLI. Defaults to 'dev'."
+        default: aws-aus
+    steps:
+      - run:
+          name: "Install Nitric CLI"
+          command: |
+            apt update && apt install ca-certificates && update-ca-certificates -f -v
+            curl https://nitric.io/install -k | bash
+            echo 'export PATH=${HOME}/.nitric/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: "Deploy using Nitric CLI"
+          command: nitric up -s << parameters.environment >> -v10
 
 jobs:
-  install_dependencies:
-    executor: default-executor
+  deploy:
+    docker:
+      - image: circleci/node:10
+      - image: docker:19.03.13
+        command: [-D]
+        environment:
+          DOCKER_TLS_CERTDIR: ""
+    environment:
+      DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
       - checkout
       - run:
-          name: Install Nitric CLI
-          command: |
-            curl https://nitric.io/install | bash
-            export PATH=$PATH:$HOME/.nitric/bin
-
-      - run:
-          name: Install Pulumi CLI
-          command: |
-            curl -fsSL https://get.pulumi.com | sh
-            export PATH=$PATH:$HOME/.pulumi/bin
-
-  check_versions:
-    executor: default-executor
-    steps:
-      - run:
-          name: Check Nitric Version
-          command: nitric version
-      - run:
-          name: Check Pulumi Version
-          command: pulumi version
+          name: Install Node Dependencies
+          command: npm install
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - pulumi_login
+      - nitric_up
 
 workflows:
   version: 2
-  install_and_test:
+  deploy_workflow:
     jobs:
-      - install_dependencies
-      - check_versions:
-          requires:
-            - install_dependencies
+      - deploy
